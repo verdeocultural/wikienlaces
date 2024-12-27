@@ -1,4 +1,3 @@
-
 import requests
 import json
 from github import Github
@@ -14,18 +13,18 @@ CATEGORIAS = config["categories"]
 
 WIKIPEDIA_API_URL = "https://es.wikipedia.org/w/api.php"
 
-def obtener_paginas_categoria(categoria, paginas=None):
+def obtener_paginas_categoria(categoria):
     """
-    Obtiene una lista de páginas de una categoría y sus subcategorías de Wikipedia.
+    Obtiene una lista de páginas directamente incluidas en una categoría de Wikipedia.
     """
-    if paginas is None:
-        paginas = {}
+    paginas = {}
 
     # Obtener páginas en la categoría
     params = {
         "action": "query",
         "list": "categorymembers",
         "cmtitle": categoria,
+        "cmtype": "page",  # Solo incluir páginas, no subcategorías
         "cmlimit": "max",
         "format": "json"
     }
@@ -34,15 +33,11 @@ def obtener_paginas_categoria(categoria, paginas=None):
 
     for miembro in miembros:
         titulo = miembro["title"]
-        if titulo.startswith("Categoría:"):
-            # Es una subcategoría; explorar recursivamente
-            obtener_paginas_categoria(titulo, paginas)
-        else:
-            # Es una página normal; agregarla al diccionario
-            paginas[miembro["pageid"]] = {
-                "title": titulo,
-                "url": f"https://es.wikipedia.org/wiki/{titulo.replace(' ', '_')}"
-            }
+        # Agregar la página al diccionario
+        paginas[miembro["pageid"]] = {
+            "title": titulo,
+            "url": f"https://es.wikipedia.org/wiki/{titulo.replace(' ', '_')}"
+        }
 
     return paginas
 
@@ -64,7 +59,7 @@ def actualizar_archivo_github(token, repo, archivo, contenido):
 # Script principal
 resultado = {}
 for categoria in CATEGORIAS:
-    # Obtener páginas para cada categoría
+    # Obtener páginas directamente en la categoría
     paginas = obtener_paginas_categoria(categoria)
     # Agregar al resultado bajo el nombre de la categoría
     resultado[categoria] = paginas
